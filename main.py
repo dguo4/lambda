@@ -1,71 +1,32 @@
-import json
-import os
-from typing import Literal, Optional
-from uuid import uuid4
 from fastapi import FastAPI, HTTPException
-import random
-from fastapi.encoders import jsonable_encoder
-from pydantic import BaseModel
 from mangum import Mangum
+from pymongo import MongoClient
 
-
-class Book(BaseModel):
-    name: str
-    genre: Literal["fiction", "non-fiction"]
-    price: float
-    book_id: Optional[str] = uuid4().hex
-
-
-BOOKS_FILE = "books.json"
-BOOKS = []
-
-if os.path.exists(BOOKS_FILE):
-    with open(BOOKS_FILE, "r") as f:
-        BOOKS = json.load(f)
+conn = MongoClient("mongodb+srv://miaHappy:6adL7Gi3VA7DNndf@cluster0.pks73ha.mongodb.net/?retryWrites=true&w=majority")
 
 app = FastAPI()
 handler = Mangum(app)
 
+def transactionEntity(item) -> dict:
+    return {
+        "id": str(item['_id']),
+        "date": item['date'],
+        "account": item['account'],
+        "ticker": item['ticker'],
+        "price": item['price'],
+        "quantity": item['quantity'],
+        "assetGroup": item['assetGroup'],
+        "assetType": item['assetType'],
+        "type": item['type']
+    }
+
+def transactionsEntity(entity) -> list:
+    return [transactionEntity(item) for item in entity]
 
 @app.get("/")
-async def root():
-    return {"message": "Welcome to my fast API test app!"}
+async def my_app():
+    return {"message": "Welcome to my investment app!"}
 
-
-@app.get("/random-book")
-async def random_book():
-    return random.choice(BOOKS)
-
-
-@app.get("/list-books")
-async def list_books():
-    return {"books": BOOKS}
-
-
-@app.get("/book_by_index/{index}")
-async def book_by_index(index: int):
-    if index < len(BOOKS):
-        return BOOKS[index]
-    else:
-        raise HTTPException(404, f"Book index {index} out of range ({len(BOOKS)}).")
-
-
-@app.post("/add-book")
-async def add_book(book: Book):
-    book.book_id = uuid4().hex
-    json_book = jsonable_encoder(book)
-    BOOKS.append(json_book)
-
-    with open(BOOKS_FILE, "w") as f:
-        json.dump(BOOKS, f)
-
-    return {"book_id": book.book_id}
-
-
-@app.get("/get-book")
-async def get_book(book_id: str):
-    for book in BOOKS:
-        if book.book_id == book_id:
-            return book
-
-    raise HTTPException(404, f"Book ID {book_id} not found in database.")
+@app.get("/all_transactions")
+async def get_all_transactions():
+    return transactionsEntity(list(conn.investment.transactions.find()))

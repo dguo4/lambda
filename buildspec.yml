@@ -13,7 +13,6 @@ phases:
       - zip -r9 ../aws_lambda_artifact.zip .
       - cd ..
       - zip -g aws_lambda_artifact.zip main.py
-      - zip -g aws_lambda_artifact.zip books.json
   post_build:
     commands:
       - echo "Updating lambda Function..."

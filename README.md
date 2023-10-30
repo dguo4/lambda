@@ -1,8 +1,14 @@
 # lambda
 
-Using below command to create requirements.txt file.
+using below command to run the project
+```powershell
+uvicorn main:app --reload
+```
 
+Using below command to create requirements.txt file.
+```powershell
 pip freeze > requirements.txt
+```
 
 ## Windows：
 Below commands are needed to create the zip file for Lambda:
