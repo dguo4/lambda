@@ -2,6 +2,7 @@ from fastapi import FastAPI, HTTPException
 from mangum import Mangum
 import boto3
 import uvicorn
+import os
 
 app = FastAPI()
 handler = Mangum(app)
@@ -17,12 +18,13 @@ async def my_test():
 @app.get("/all_transactions")
 async def get_all_transactions():
     dynamodb = boto3.resource('dynamodb')
-    table = dynamodb.Table('invest_transactions')
+    table_name = os.environ['TRANSACTIONS_TABLE_NAME']
+    table = dynamodb.Table(table_name)
     response = table.scan()
     data = response['Items']
 
     return data
 
 if __name__ == "__main__":
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    os.environ['TRANSACTIONS_TABLE_NAME'] = 'invest_transactions'
 
