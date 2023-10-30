@@ -29,7 +29,7 @@ handler = Mangum(app)
 
 @app.get("/")
 async def root():
-    return {"message": "Welcome to my investment app!"}
+    return {"message": "Welcome to my fast API test app!"}
 
 
 @app.get("/random-book")
