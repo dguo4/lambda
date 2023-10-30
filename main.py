@@ -27,6 +27,10 @@ def transactionsEntity(entity) -> list:
 async def my_app():
     return {"message": "Welcome to my investment app!"}
 
+@app.get("/test1")
+async def my_test():
+    return {"message": "Test function is working!"}
+
 @app.get("/all_transactions")
 async def get_all_transactions():
     return transactionsEntity(list(conn.investment.transactions.find()))
