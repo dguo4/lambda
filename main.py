@@ -55,7 +55,7 @@ async def add_single_transaction(item: transaction):
         return {"message": "Item added successfully", "item": new_item}
 
     except Exception as e:
-        print(e)
+        # print(e)
         raise HTTPException(status_code=500, detail="Failed to add item to DynamoDB")
 
 
