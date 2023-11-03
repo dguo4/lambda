@@ -1,61 +1,64 @@
-import uuid
+import logging
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI
 from mangum import Mangum
-import boto3
-import uvicorn
+import pandas as pd
 import os
-from transaction import transaction
+from models import transaction, position
+import transactions_utils
+import positions_utils
+
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+logger = logging.getLogger(__name__)
 
 app = FastAPI()
 handler = Mangum(app)
 
 if __name__ == "__main__":
+    logger.info("Start debug ...")
     os.environ['TRANSACTIONS_TABLE_NAME'] = 'invest_transactions'
+    os.environ['POSITIONS_TABLE_NAME'] = 'invest_positions'
 
 @app.get("/")
 async def my_app():
+    logger.info("Accessed the root endpoint")
     return {"message": "Welcome to my investment app!"}
-
-@app.get("/test1")
-async def my_test():
-    return {"message": "Test function is working!"}
 
 @app.get("/all_transactions")
 async def get_all_transactions():
-    dynamodb = boto3.resource('dynamodb')
-    table_name = os.environ['TRANSACTIONS_TABLE_NAME']
-    table = dynamodb.Table(table_name)
-    response = table.scan()
-    data = response['Items']
+    logger.info("get all transactions ... ")
+    return transactions_utils.get_all_transaction()
 
-    return data
+@app.get("/all_positions")
+async def get_all_positions():
+    logger.info("get all positions ... ")
+    return positions_utils.get_all_positions()
 
 @app.post("/add_transaction")
 async def add_single_transaction(item: transaction):
-    try:
-        transaction_id = str(uuid.uuid4())
-        new_item = {
-            "transaction_id": {"S": transaction_id},
-            "account": {"S": item.account},
-            "assetGroup": {"S": item.assetGroup},
-            "assetType": {"S": item.assetType},
-            "date": {"S": item.date},
-            "price": {"N": str(item.price)},
-            "quantity": {"N": str(item.quantity)},
-            "ticker": {"S": item.ticker},
-            "type": {"S": item.type}
+    # add new transaction to transactions table
+    transactions_utils.add_new_transaction(item)
+
+    # get all transactions
+    all_transactions_data = transactions_utils.get_all_transaction()
+    new_all_transactions_df = pd.DataFrame(all_transactions_data)
+
+    # pivot transactions to position
+    new_positions_df = positions_utils.transfer_transactions_to_position(new_all_transactions_df)
+
+    # add all new positions by ticker to position table
+    for t in new_positions_df['ticker'].unique().tolist():
+        single_new_position_df = new_positions_df.loc[new_positions_df['ticker'] == t]
+        position_item = {
+            "ticker": single_new_position_df['ticker'].values[0],
+            "price": single_new_position_df['price'].values[0],
+            "quantity": single_new_position_df['quantity'].values[0],
+            "assetGroup":single_new_position_df['assetGroup'].values[0],
+            "assetType": single_new_position_df['assetType'].values[0],
+            "date": item.date
         }
-        dynamodb = boto3.client('dynamodb')
-        response = dynamodb.put_item(
-            TableName = os.environ['TRANSACTIONS_TABLE_NAME'],
-            Item = new_item
-        )
+        positions_utils.add_position(position_item)
 
-        return {"message": "Item added successfully", "item": new_item}
-
-    except Exception as e:
-        # print(e)
-        raise HTTPException(status_code=500, detail="Failed to add item to DynamoDB")
+    return {"message": "Item added successfully"}
 
 
