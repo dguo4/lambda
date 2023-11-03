@@ -14,8 +14,6 @@ phases:
       - cd ..
       - zip -g aws_lambda_artifact.zip main.py
       - zip -g aws_lambda_artifact.zip models.py
-      - zip -g aws_lambda_artifact.zip transactions_utils.py
-      - zip -g aws_lambda_artifact.zip positions_utils.py
   post_build:
     commands:
       - echo "Updating lambda Function..."
