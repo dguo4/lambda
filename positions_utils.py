@@ -17,7 +17,7 @@ def add_position(item):
             "price": {"N": str(item['price'])},
             "quantity": {"N": str(item['quantity'])},
             "assetGroup": {"S": item['assetGroup']},
-            "assetType": {"S": item['assetGroup']},
+            "assetType": {"S": item['assetType']},
             "date": {"S": item['date']}
         }
         response = dynamodb_client.put_item(

@@ -53,7 +53,7 @@ async def add_single_transaction(item: transaction):
             "ticker": single_new_position_df['ticker'].values[0],
             "price": single_new_position_df['price'].values[0],
             "quantity": single_new_position_df['quantity'].values[0],
-            "assetGroup":single_new_position_df['assetGroup'].values[0],
+            "assetGroup": single_new_position_df['assetGroup'].values[0],
             "assetType": single_new_position_df['assetType'].values[0],
             "date": item.date
         }
