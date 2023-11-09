@@ -1,6 +1,8 @@
 import boto3
 import uuid
 import os
+
+import pandas as pd
 from fastapi import HTTPException
 
 # os.environ['TRANSACTIONS_TABLE_NAME'] = 'invest_transactions'
@@ -38,7 +40,18 @@ def get_all_positions():
     return data
 
 def transfer_transactions_to_position(transactions_df):
-    transactions_df = transactions_df.loc[:,['date', 'ticker', 'price', 'quantity', 'assetGroup', 'assetType']]
-    positions_df = (transactions_df.groupby(['ticker', 'assetGroup', 'assetType']).
-                    agg({'price': 'mean', 'quantity': 'sum'}).reset_index())
-    return positions_df
+    transactions_df = transactions_df.loc[:, ['date', 'ticker', 'price', 'quantity', 'assetGroup', 'assetType']]
+    positions_list = []
+    for ticker in transactions_df['ticker'].unique().tolist():
+        transactions_dff = transactions_df.loc[transactions_df['ticker'] == ticker, :]
+        position_record = {
+            'ticker': ticker,
+            'assetGroup': transactions_dff['assetGroup'].unique().tolist()[0],
+            'assetType': transactions_dff['assetType'].unique().tolist()[0],
+            # we are using weighted average price
+            'price': (transactions_dff['price'] * transactions_dff['quantity']).sum() / transactions_dff['quantity'].sum(),
+            'quantity': transactions_dff['quantity'].sum()
+        }
+        positions_list.append(position_record)
+
+    return pd.DataFrame(positions_list)
