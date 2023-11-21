@@ -1,4 +1,5 @@
 import boto3
+from boto3.dynamodb.conditions import Attr
 import uuid
 import os
 
@@ -55,3 +56,28 @@ def transfer_transactions_to_position(transactions_df):
         positions_list.append(position_record)
 
     return pd.DataFrame(positions_list)
+
+def delete_positions_by_date(date):
+    # get all positions (before adding single transaction)
+    dynamodb = boto3.resource('dynamodb')
+    table_name = os.environ['POSITIONS_TABLE_NAME']
+    table = dynamodb.Table(table_name)
+
+    # Step 1: Scan or Query to Identify Records
+    response = table.scan(
+        FilterExpression=Attr('date').eq(date)
+    )
+
+    # Extract the items to be deleted
+    items_to_delete = response.get('Items', [])
+
+    # Step 2: BatchWrite to Delete Identified Records
+    with table.batch_writer() as batch:
+        for item in items_to_delete:
+            batch.delete_item(
+                Key={
+                    'position_id': item['position_id']
+                }
+            )
+
+    return None

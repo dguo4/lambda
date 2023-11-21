@@ -36,6 +36,7 @@ async def get_all_positions():
 
 @app.post("/add_transaction")
 async def add_single_transaction(item: transaction):
+    transaction_date = item.date
     # add new transaction to transactions table
     transactions_utils.add_new_transaction(item)
 
@@ -46,6 +47,9 @@ async def add_single_transaction(item: transaction):
     # pivot transactions to position
     new_positions_df = positions_utils.transfer_transactions_to_position(new_all_transactions_df)
 
+    # delete position
+    positions_utils.delete_positions_by_date(transaction_date)
+
     # add all new positions by ticker to position table
     for t in new_positions_df['ticker'].unique().tolist():
         single_new_position_df = new_positions_df.loc[new_positions_df['ticker'] == t]
@@ -55,7 +59,7 @@ async def add_single_transaction(item: transaction):
             "quantity": single_new_position_df['quantity'].values[0],
             "assetGroup": single_new_position_df['assetGroup'].values[0],
             "assetType": single_new_position_df['assetType'].values[0],
-            "date": item.date
+            "date": transaction_date
         }
         positions_utils.add_position(position_item)
 
